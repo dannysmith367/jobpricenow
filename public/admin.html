@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | JobPriceNow</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .admin-wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
+  .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .admin-header h1 { font-size: 20px; margin: 0; color: var(--navy); }
+  .logout-link { font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: underline; background: none; border: none; }
+
+  .gate { max-width: 360px; margin: 80px auto; text-align: center; }
+  .gate input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; margin: 16px 0; box-sizing: border-box; }
+  .gate button, .primary-btn { background: var(--blue); color: #fff; border: none; padding: 11px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .gate button:hover, .primary-btn:hover { background: var(--blue-dark); }
+  .gate-error { color: #C0392B; font-size: 13px; min-height: 18px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab-btn { padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--blue); }
+  .tab-btn:disabled { color: #B7C0CC; cursor: not-allowed; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 4px; font-size: 15px; color: var(--navy); }
+  .card .sub { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  label.switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+  label.switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: #CBD5E1; border-radius: 22px; transition: .15s; }
+  .slider:before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .15s; }
+  input:checked + .slider { background: var(--blue); }
+  input:checked + .slider:before { transform: translateX(18px); }
+  input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
+
+  textarea, input[type=text], input[type=url] { width: 100%; box-sizing: border-box; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13.5px; font-family: var(--font); color: var(--text); }
+  textarea { font-family: ui-monospace, monospace; min-height: 70px; resize: vertical; }
+  .field-label { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 10px 0 4px; display: block; }
+
+  .save-bar { position: sticky; bottom: 0; background: var(--white); border-top: 1px solid var(--border); padding: 12px 20px; margin: 24px -20px -80px; display: flex; align-items: center; gap: 12px; }
+  .save-status { font-size: 13px; color: var(--green); }
+
+  .post-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .post-row:last-child { border-bottom: none; }
+  .post-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .post-meta { font-size: 12px; color: var(--muted); }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+  .badge.live { background: var(--green-bg); color: var(--green); }
+  .badge.draft { background: var(--warn-bg); color: var(--warn-text); }
+  .link-btn { background: none; border: none; color: var(--blue); font-size: 13px; cursor: pointer; padding: 0; }
+  .link-btn.danger { color: #C0392B; }
+
+  .pro-placeholder { text-align: center; padding: 40px 20px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h1 style="color:var(--navy);font-size:22px;">JobPriceNow Admin</h1>
+  <p style="color:var(--muted);font-size:14px;">Enter the admin password to continue.</p>
+  <input type="password" id="password-input" placeholder="Admin password" autocomplete="current-password">
+  <div class="gate-error" id="gate-error"></div>
+  <button id="unlock-btn">Unlock</button>
+</div>
+
+<div id="dashboard" class="admin-wrap" hidden>
+  <div class="admin-header">
+    <h1>JobPrice<span class="accent">Now</span> Admin</h1>
+    <button class="logout-link" id="logout-btn">Log out</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="ads">Ads &amp; Affiliate</button>
+    <button class="tab-btn" data-tab="blog">Blog Posts</button>
+    <button class="tab-btn" data-tab="pro" disabled title="Coming later">Pro (coming soon)</button>
+  </div>
+
+  <!-- ADS & AFFILIATE TAB -->
+  <div class="tab-panel active" id="tab-ads">
+    <div class="card">
+      <div class="row">
+        <div>
+          <h3>Ads enabled</h3>
+          <p class="sub">Master switch. Off = no ad slots render anywhere, even if filled in below.</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="ads-enabled"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div id="ad-slots-container"></div>
+
+    <div class="card">
+      <h3>Affiliate partners</h3>
+      <p class="sub">Toggle a partner on and paste your affiliate link template. Use <code>{QUERY}</code> where the search term or product should go.</p>
+      <div id="affiliate-container"></div>
+    </div>
+  </div>
+
+  <!-- BLOG TAB -->
+  <div class="tab-panel" id="tab-blog">
+    <div class="card">
+      <div class="row" style="margin-bottom:0;">
+        <h3 style="margin:0;">Posts</h3>
+        <button class="primary-btn" id="new-post-btn">+ New post</button>
+      </div>
+    </div>
+    <div class="card" id="post-list-card">
+      <div id="post-list"></div>
+    </div>
+
+    <div class="card" id="post-editor" hidden>
+      <h3 id="editor-heading">New post</h3>
+      <label class="field-label">Title</label>
+      <input type="text" id="post-title" placeholder="How to fix a leaky faucet">
+      <label class="field-label">URL slug (auto-filled from title, editable)</label>
+      <input type="text" id="post-slug" placeholder="how-to-fix-a-leaky-faucet">
+      <label class="field-label">Meta description (for Google search results, ~155 characters)</label>
+      <input type="text" id="post-meta" placeholder="A quick guide to fixing a leaky faucet yourself, and when to call a pro.">
+      <label class="field-label">Content (HTML — paste from Google Docs/Word, or write plain paragraphs)</label>
+      <textarea id="post-content" style="min-height:220px;" placeholder="&lt;p&gt;Start writing here...&lt;/p&gt;"></textarea>
+      <div class="row" style="margin-top:14px;">
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="post-published" style="width:auto;"> Published (live on the site)
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button class="primary-btn" id="save-post-btn">Save post</button>
+        <button class="link-btn" id="cancel-post-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRO TAB (placeholder) -->
+  <div class="tab-panel" id="tab-pro">
+    <div class="card pro-placeholder">
+      <p>Pro-tier controls will show up here once you're ready to turn on paid features.</p>
+      <p style="font-size:12.5px;">The feature flag already exists in the codebase — flipping it on later is a small change, not a rebuild.</p>
+    </div>
+  </div>
+
+  <div class="save-bar">
+    <button class="primary-btn" id="save-monetization-btn">Save ads &amp; affiliate settings</button>
+    <span class="save-status" id="save-status"></span>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Preview | JobPriceNow</title>
+<style>
+  :root {
+    --navy: #0B2545; --navy-soft: #16335E; --blue: #2E6FF2; --blue-dark: #1B54D6;
+    --bg: #F5F7FA; --white: #FFFFFF; --green: #1FA97A; --green-bg: #E9F8F2;
+    --text: #16233D; --muted: #64748B; --border: #E2E8F0;
+    --warn-bg: #FFF8EA; --warn-border: #F2C879; --warn-text: #7A5A0A;
+    --radius: 14px; --radius-sm: 9px;
+    --shadow: 0 1px 2px rgba(11,37,69,0.06), 0 8px 24px rgba(11,37,69,0.06);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+  a { color: inherit; }
+
+  .preview-banner {
+    background: var(--navy); color: #fff; font-size: 12.5px; text-align: center;
+    padding: 7px 12px; line-height: 1.4;
+  }
+  .preview-banner strong { color: #9DC0FF; }
+
+  .accent { color: var(--blue); }
+
+  .admin-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
+  .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .admin-header h1 { font-size: 19px; margin: 0; color: var(--navy); }
+  .logout-link { font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: underline; background: none; border: none; }
+
+  .gate { max-width: 340px; margin: 60px auto; text-align: center; padding: 0 16px; }
+  .gate input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; margin: 16px 0 6px; box-sizing: border-box; }
+  .gate button, .primary-btn { background: var(--blue); color: #fff; border: none; padding: 11px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .gate button:hover, .primary-btn:hover { background: var(--blue-dark); }
+  .gate-hint { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .gate-error { color: #C0392B; font-size: 13px; min-height: 18px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
+  .tab-btn { padding: 10px 14px; font-size: 13.5px; font-weight: 600; color: var(--muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--blue); }
+  .tab-btn:disabled { color: #B7C0CC; cursor: not-allowed; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 4px; font-size: 14.5px; color: var(--navy); }
+  .card .sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  label.switch { position: relative; display: inline-block; width: 38px; height: 21px; flex-shrink: 0; }
+  label.switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: #CBD5E1; border-radius: 22px; transition: .15s; }
+  .slider:before { content: ""; position: absolute; height: 15px; width: 15px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .15s; }
+  input:checked + .slider { background: var(--blue); }
+  input:checked + .slider:before { transform: translateX(17px); }
+
+  textarea, input[type=text], input[type=url] { width: 100%; box-sizing: border-box; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font); color: var(--text); }
+  textarea { font-family: ui-monospace, monospace; min-height: 60px; resize: vertical; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 4px; display: block; }
+
+  .save-bar { position: sticky; bottom: 0; background: var(--white); border-top: 1px solid var(--border); padding: 12px 16px; margin: 20px -16px -60px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .save-status { font-size: 12.5px; color: var(--green); }
+
+  .post-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+  .post-row:last-child { border-bottom: none; }
+  .post-title { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .post-meta { font-size: 11.5px; color: var(--muted); }
+  .badge { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+  .badge.live { background: var(--green-bg); color: var(--green); }
+  .badge.draft { background: var(--warn-bg); color: var(--warn-text); }
+  .link-btn { background: none; border: none; color: var(--blue); font-size: 12.5px; cursor: pointer; padding: 0; white-space: nowrap; }
+  .link-btn.danger { color: #C0392B; }
+
+  .pro-placeholder { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 13.5px; }
+
+  .blog-preview-frame { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px; }
+  .blog-preview-frame iframe { width: 100%; height: 320px; border: none; display: block; }
+</style>
+</head>
+<body>
+
+<div class="preview-banner">📋 <strong>Preview mode</strong> — this simulates the real admin page. Data here resets on refresh; on the live site it's saved for real via Netlify Blobs.</div>
+
+<div id="gate" class="gate">
+  <h1 style="color:var(--navy);font-size:20px;">JobPriceNow Admin</h1>
+  <p style="color:var(--muted);font-size:13.5px;">Enter the admin password to continue.</p>
+  <input type="password" id="password-input" placeholder="Admin password" value="demo">
+  <p class="gate-hint">Preview password is pre-filled: <strong>demo</strong>. On the real site, this is whatever you set as <code>ADMIN_PASSWORD</code>.</p>
+  <div class="gate-error" id="gate-error"></div>
+  <button id="unlock-btn">Unlock</button>
+</div>
+
+<div id="dashboard" class="admin-wrap" hidden>
+  <div class="admin-header">
+    <h1>JobPrice<span class="accent">Now</span> Admin</h1>
+    <button class="logout-link" id="logout-btn">Log out</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="ads">Ads &amp; Affiliate</button>
+    <button class="tab-btn" data-tab="blog">Blog Posts</button>
+    <button class="tab-btn" data-tab="pro" disabled title="Coming later">Pro (soon)</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-ads">
+    <div class="card">
+      <div class="row">
+        <div>
+          <h3>Ads enabled</h3>
+          <p class="sub">Master switch. Off = no ad slots render anywhere, even if filled in below.</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="ads-enabled"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div id="ad-slots-container"></div>
+
+    <div class="card">
+      <h3>Affiliate partners</h3>
+      <p class="sub">Toggle a partner on and paste your affiliate link template. Use <code>{QUERY}</code> where the search term should go.</p>
+      <div id="affiliate-container"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-blog">
+    <div class="card">
+      <div class="row" style="margin-bottom:0;">
+        <h3 style="margin:0;">Posts</h3>
+        <button class="primary-btn" id="new-post-btn">+ New post</button>
+      </div>
+    </div>
+    <div class="card" id="post-list-card">
+      <div id="post-list"></div>
+    </div>
+
+    <div class="card" id="post-editor" hidden>
+      <h3 id="editor-heading">New post</h3>
+      <label class="field-label">Title</label>
+      <input type="text" id="post-title" placeholder="How to fix a leaky faucet">
+      <label class="field-label">URL slug</label>
+      <input type="text" id="post-slug" placeholder="how-to-fix-a-leaky-faucet">
+      <label class="field-label">Meta description (~155 characters, for Google)</label>
+      <input type="text" id="post-meta" placeholder="A quick guide to fixing a leaky faucet yourself.">
+      <label class="field-label">Content (HTML — paste from Docs/Word, or plain paragraphs)</label>
+      <textarea id="post-content" style="min-height:160px;" placeholder="&lt;p&gt;Start writing here...&lt;/p&gt;"></textarea>
+      <div class="row" style="margin-top:14px;">
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="post-published" style="width:auto;"> Published (live on the site)
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <button class="primary-btn" id="save-post-btn">Save post</button>
+        <button class="link-btn" id="cancel-post-btn">Cancel</button>
+        <button class="link-btn" id="preview-post-btn">Preview →</button>
+      </div>
+      <div class="blog-preview-frame" id="preview-frame-wrap" hidden>
+        <iframe id="preview-frame"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-pro">
+    <div class="card pro-placeholder">
+      <p>Pro-tier controls will show up here once you're ready to turn on paid features.</p>
+      <p style="font-size:11.5px;">The feature flag already exists in the codebase — flipping it on later is a small config change, not a rebuild.</p>
+    </div>
+  </div>
+
+  <div class="save-bar">
+    <button class="primary-btn" id="save-monetization-btn">Save ads &amp; affiliate settings</button>
+    <span class="save-status" id="save-status"></span>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------------------------------------------------------
+  // In-memory mock of the real backend (lib/monetization-store.mjs
+  // and lib/blog-store.mjs). Same shapes, same defaults — this is
+  // purely so the admin UI can be clicked through here without a
+  // server. The real deployed site persists this via Netlify Blobs.
+  // ---------------------------------------------------------
+  const DEMO_PASSWORD = "demo";
+
+  let monetization = {
+    adsEnabled: false,
+    adSlots: {
+      result_ad_slot: { label: "Below the price breakdown", html: "" },
+      footer_ad_slot: { label: "Page footer", html: "" },
+      blog_ad_slot: { label: "Inside blog posts", html: "" },
+    },
+    affiliatePartners: {
+      lowes: { label: "Lowe's", enabled: false, urlTemplate: "" },
+      ace: { label: "Ace Hardware", enabled: false, urlTemplate: "" },
+      amazon: { label: "Amazon", enabled: false, urlTemplate: "" },
+      harborFreight: { label: "Harbor Freight", enabled: false, urlTemplate: "" },
+    },
+    proEnabled: false,
+  };
+
+  let posts = [
+    {
+      id: "post_demo_1",
+      title: "How Much Does It Cost to Fix a Leaky Faucet?",
+      slug: "how-much-does-it-cost-to-fix-a-leaky-faucet",
+      metaDescription: "A quick pricing guide for faucet repairs, from a simple washer swap to a full replacement.",
+      content: "<p>Most leaky faucet repairs run <strong>$125\u2013$250</strong>, depending on whether it's a simple washer or O-ring swap versus a full cartridge or faucet replacement.</p><p>If the leak is from the base rather than the spout, it's usually a worn supply line or shutoff valve \u2014 still a quick fix for a handyman.</p>",
+      published: true,
+      createdAt: "2026-08-10T12:00:00.000Z",
+      updatedAt: "2026-08-10T12:00:00.000Z",
+      publishedAt: "2026-08-10T12:00:00.000Z",
+    },
+  ];
+  let editingPostId = null;
+
+  function slugify(title) {
+    return String(title).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 80);
+  }
+  function escapeHtml(str) {
+    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  const gate = document.getElementById("gate");
+  const dashboard = document.getElementById("dashboard");
+  const gateError = document.getElementById("gate-error");
+
+  document.getElementById("unlock-btn").addEventListener("click", () => {
+    const pw = document.getElementById("password-input").value;
+    if (pw !== DEMO_PASSWORD) {
+      gateError.textContent = 'Incorrect password. (Hint: it\'s "demo" in this preview.)';
+      return;
+    }
+    gate.hidden = true;
+    dashboard.hidden = false;
+    renderMonetization();
+    renderPostList();
+  });
+  document.getElementById("password-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("unlock-btn").click();
+  });
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    dashboard.hidden = true;
+    gate.hidden = false;
+  });
+
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+    });
+  });
+
+  function renderMonetization() {
+    document.getElementById("ads-enabled").checked = monetization.adsEnabled;
+
+    const slotsEl = document.getElementById("ad-slots-container");
+    slotsEl.innerHTML = "";
+    Object.entries(monetization.adSlots).forEach(([key, slot]) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${slot.label}</h3>
+        <p class="sub">Paste your ad network's embed code. Leave blank to skip this spot.</p>
+        <textarea data-slot-key="${key}" placeholder="&lt;script&gt;...&lt;/script&gt;">${escapeHtml(slot.html)}</textarea>
+      `;
+      slotsEl.appendChild(card);
+    });
+
+    const affEl = document.getElementById("affiliate-container");
+    affEl.innerHTML = "";
+    Object.entries(monetization.affiliatePartners).forEach(([key, partner]) => {
+      const row = document.createElement("div");
+      row.style.marginBottom = "14px";
+      row.innerHTML = `
+        <div class="row" style="margin-bottom:6px;">
+          <strong style="font-size:13px;">${partner.label}</strong>
+          <label class="switch"><input type="checkbox" data-partner-key="${key}" data-field="enabled" ${partner.enabled ? "checked" : ""}><span class="slider"></span></label>
+        </div>
+        <input type="url" data-partner-key="${key}" data-field="urlTemplate" placeholder="https://partner.example.com/search?q={QUERY}&tag=your-id" value="${escapeHtml(partner.urlTemplate)}">
+      `;
+      affEl.appendChild(row);
+    });
+  }
+
+  function collectMonetizationFromForm() {
+    monetization.adsEnabled = document.getElementById("ads-enabled").checked;
+    document.querySelectorAll("[data-slot-key]").forEach((el) => {
+      monetization.adSlots[el.dataset.slotKey].html = el.value;
+    });
+    document.querySelectorAll("[data-partner-key]").forEach((el) => {
+      const key = el.dataset.partnerKey, field = el.dataset.field;
+      monetization.affiliatePartners[key][field] = field === "enabled" ? el.checked : el.value;
+    });
+  }
+
+  document.getElementById("save-monetization-btn").addEventListener("click", () => {
+    collectMonetizationFromForm();
+    const status = document.getElementById("save-status");
+    status.style.color = "var(--green)";
+    status.textContent = "Saved \u2713 (in this preview session)";
+    setTimeout(() => (status.textContent = ""), 3000);
+  });
+
+  function renderPostList() {
+    const el = document.getElementById("post-list");
+    if (!posts.length) {
+      el.innerHTML = `<p style="color:var(--muted);font-size:13px;">No posts yet \u2014 click "New post" to write your first one.</p>`;
+      return;
+    }
+    el.innerHTML = posts
+      .slice()
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+      .map(
+        (p) => `
+      <div class="post-row">
+        <div>
+          <div class="post-title">${escapeHtml(p.title)}</div>
+          <div class="post-meta">/blog/${escapeHtml(p.slug)} \u00b7 <span class="badge ${p.published ? "live" : "draft"}">${p.published ? "Live" : "Draft"}</span></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="link-btn" data-edit="${p.id}">Edit</button>
+          <button class="link-btn danger" data-delete="${p.id}">Delete</button>
+        </div>
+      </div>`
+      )
+      .join("");
+
+    el.querySelectorAll("[data-edit]").forEach((btn) =>
+      btn.addEventListener("click", () => openEditor(posts.find((p) => p.id === btn.dataset.edit)))
+    );
+    el.querySelectorAll("[data-delete]").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        if (!confirm("Delete this post?")) return;
+        posts = posts.filter((p) => p.id !== btn.dataset.delete);
+        renderPostList();
+      })
+    );
+  }
+
+  function openEditor(post) {
+    editingPostId = post?.id || null;
+    document.getElementById("editor-heading").textContent = post ? "Edit post" : "New post";
+    document.getElementById("post-title").value = post?.title || "";
+    document.getElementById("post-slug").value = post?.slug || "";
+    document.getElementById("post-meta").value = post?.metaDescription || "";
+    document.getElementById("post-content").value = post?.content || "";
+    document.getElementById("post-published").checked = Boolean(post?.published);
+    document.getElementById("post-editor").hidden = false;
+    document.getElementById("preview-frame-wrap").hidden = true;
+    document.getElementById("post-editor").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  document.getElementById("new-post-btn").addEventListener("click", () => openEditor(null));
+  document.getElementById("cancel-post-btn").addEventListener("click", () => {
+    document.getElementById("post-editor").hidden = true;
+  });
+
+  let slugManuallyEdited = false;
+  document.getElementById("post-slug").addEventListener("input", () => (slugManuallyEdited = true));
+  document.getElementById("post-title").addEventListener("input", (e) => {
+    if (slugManuallyEdited || editingPostId) return;
+    document.getElementById("post-slug").value = slugify(e.target.value);
+  });
+
+  document.getElementById("save-post-btn").addEventListener("click", () => {
+    const title = document.getElementById("post-title").value.trim();
+    const content = document.getElementById("post-content").value;
+    if (!title || !content) { alert("A title and content are required."); return; }
+
+    const now = new Date().toISOString();
+    if (editingPostId) {
+      const p = posts.find((p) => p.id === editingPostId);
+      Object.assign(p, {
+        title,
+        slug: document.getElementById("post-slug").value.trim() || slugify(title),
+        metaDescription: document.getElementById("post-meta").value.trim(),
+        content,
+        published: document.getElementById("post-published").checked,
+        updatedAt: now,
+      });
+    } else {
+      posts.push({
+        id: "post_" + Date.now(),
+        title,
+        slug: document.getElementById("post-slug").value.trim() || slugify(title),
+        metaDescription: document.getElementById("post-meta").value.trim(),
+        content,
+        published: document.getElementById("post-published").checked,
+        createdAt: now,
+        updatedAt: now,
+        publishedAt: document.getElementById("post-published").checked ? now : null,
+      });
+    }
+    renderPostList();
+    document.getElementById("post-editor").hidden = true;
+    slugManuallyEdited = false;
+  });
+
+  document.getElementById("preview-post-btn").addEventListener("click", () => {
+    const title = document.getElementById("post-title").value.trim() || "Untitled post";
+    const content = document.getElementById("post-content").value || "<p>Nothing written yet.</p>";
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <style>body{font-family:${getComputedStyle(document.body).fontFamily.replace(/"/g,'\\"')};padding:16px;color:#16233D;}
+      h1{font-size:20px;color:#0B2545;}</style></head>
+      <body><h1>${escapeHtml(title)}</h1><div>${content}</div></body></html>`;
+    const frame = document.getElementById("preview-frame");
+    frame.srcdoc = html;
+    document.getElementById("preview-frame-wrap").hidden = false;
+  });
+})();
+</script>
+</body>
+</html>
