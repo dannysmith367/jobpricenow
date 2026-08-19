@@ -13,7 +13,7 @@
   function track(event, meta = {}) {
     try {
       console.debug("[analytics]", event, meta);
-      // window.plausible?.(event); or similar, wired up later.
+      if (window.gtag) window.gtag("event", event, meta);
     } catch (_) {}
   }
 
@@ -102,11 +102,27 @@
       const res = await fetch("/api/site-config");
       if (res.ok) siteConfig = await res.json();
       injectAdSlot(document.getElementById("footer-ad-slot"));
+      loadGoogleAnalytics(siteConfig?.googleAnalyticsId);
     } catch (_) {
       // Config fetch failing should never block the estimator — just skip ads/affiliate links.
     }
   }
   loadSiteConfig();
+
+  function loadGoogleAnalytics(measurementId) {
+    if (!measurementId || window.__gaLoaded) return;
+    window.__gaLoaded = true;
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+    document.head.appendChild(script);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () {
+      window.dataLayer.push(arguments);
+    };
+    window.gtag("js", new Date());
+    window.gtag("config", measurementId);
+  }
 
   // ---------------- Description char count ----------------
   els.description.addEventListener("input", () => {
@@ -361,10 +377,8 @@
     const showQuoteBtn = PERSONA_COPY[getPersona()].showQuoteBtn;
     html += `
       <div class="action-row">
-        ${showQuoteBtn ? `<button type="button" class="btn-primary btn-full" id="create-quote-btn">Create Customer Quote</button>` : ""}
         <button type="button" class="btn-outline btn-full" id="new-estimate-btn">${showQuoteBtn ? "Price Another Job" : "Check Another Job"}</button>
       </div>
-      <div id="quote-container"></div>
     `;
 
     html += renderMaterialsPlaceholder();
@@ -497,32 +511,6 @@
       els.form.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
-    document.getElementById("create-quote-btn")?.addEventListener("click", () => {
-      track("quote_created");
-      const quoteText = buildQuoteText(lastRequestBody.description, pricing);
-      const container = document.getElementById("quote-container");
-      container.innerHTML = `
-        <div class="quote-box">
-          <h3>Customer Quote</h3>
-          <p class="quote-text">${escapeHtml(quoteText)}</p>
-          <button type="button" class="btn-outline btn-full" id="copy-quote-btn">Copy Quote</button>
-        </div>
-      `;
-      document.getElementById("copy-quote-btn").addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(quoteText);
-          track("quote_copied");
-          const btn = document.getElementById("copy-quote-btn");
-          const original = btn.textContent;
-          btn.textContent = "Copied!";
-          setTimeout(() => (btn.textContent = original), 1500);
-        } catch (_) {
-          alert("Couldn't copy automatically — please select and copy the text above.");
-        }
-      });
-      container.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-
     document.querySelectorAll(".feedback-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".feedback-btn").forEach((b) => b.classList.remove("selected"));
@@ -558,17 +546,6 @@
         alert("Couldn't start the quote builder. Please try again.");
       }
     });
-  }
-
-  function buildQuoteText(description, pricing) {
-    return [
-      description,
-      "",
-      `Labor and materials: ${money(pricing.prices.recommended)}`,
-      `Estimated completion time: approximately ${pricing.laborHoursLow}–${pricing.laborHoursHigh} hours.`,
-      "",
-      "Price assumes normal site conditions and may change if additional repairs are discovered.",
-    ].join("\n");
   }
 
   track("page_loaded");
