@@ -9,6 +9,7 @@
   let posts = [];
   let editingPostId = null;
   let promoCodes = [];
+  let blogAutomation = null;
 
   function getPassword() {
     return sessionStorage.getItem(SESSION_KEY) || "";
@@ -36,11 +37,13 @@
       monetization = await api("/api/admin-monetization");
       posts = await api("/api/admin-blog");
       promoCodes = await api("/api/admin-promo");
+      blogAutomation = await api("/api/admin-blog-automation");
       gate.hidden = true;
       dashboard.hidden = false;
       renderMonetization();
       renderPostList();
       renderPromoCodes();
+      renderBlogAutomation();
     } catch (err) {
       sessionStorage.removeItem(SESSION_KEY);
       gateError.textContent = "Incorrect password. Try again.";
@@ -105,6 +108,13 @@
       `;
       affEl.appendChild(row);
     });
+
+    const mode = monetization.materialsSectionMode || "products";
+    document.getElementById("materials-mode-products").checked = mode === "products";
+    document.getElementById("materials-mode-findapro").checked = mode === "findAPro";
+    document.getElementById("angi-enabled").checked = Boolean(monetization.angiPartner?.enabled);
+    document.getElementById("angi-url").value = monetization.angiPartner?.urlTemplate || "";
+    document.getElementById("ga-id").value = monetization.googleAnalyticsId || "";
   }
 
   function collectMonetizationFromForm() {
@@ -118,6 +128,13 @@
       const field = el.dataset.field;
       next.affiliatePartners[key][field] = field === "enabled" ? el.checked : el.value;
     });
+    next.materialsSectionMode = document.querySelector('input[name="materials-mode"]:checked')?.value || "products";
+    next.angiPartner = {
+      ...next.angiPartner,
+      enabled: document.getElementById("angi-enabled").checked,
+      urlTemplate: document.getElementById("angi-url").value,
+    };
+    next.googleAnalyticsId = document.getElementById("ga-id").value.trim();
     return next;
   }
 
@@ -289,6 +306,87 @@
       document.getElementById("promo-maxuses-input").value = "";
     } catch (err) {
       alert("Error creating promo code: " + err.message);
+    }
+  });
+
+  // ---------- Blog automation ----------
+  function renderBlogAutomation() {
+    if (!blogAutomation) return;
+    document.getElementById("blog-auto-enabled").checked = Boolean(blogAutomation.enabled);
+    const status = document.getElementById("blog-auto-status");
+    status.textContent = blogAutomation.lastRunAt
+      ? `Last post generated: ${new Date(blogAutomation.lastRunAt).toLocaleDateString()}`
+      : "No posts generated yet.";
+
+    const listEl = document.getElementById("blog-topic-list");
+    const topics = blogAutomation.topics || [];
+    if (!topics.length) {
+      listEl.innerHTML = `<p class="sub">No topics yet — add one below.</p>`;
+    } else {
+      listEl.innerHTML = topics
+        .map(
+          (t, i) => `
+        <div class="row" style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:13.5px;${t.used ? "color:var(--muted);" : ""}">${escapeHtml(t.topic)}${t.used ? " <em>(used)</em>" : ""}</span>
+          <button type="button" class="icon-btn remove-topic-btn" data-index="${i}" title="Remove">✕</button>
+        </div>
+      `
+        )
+        .join("");
+      listEl.querySelectorAll(".remove-topic-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            await api("/api/admin-blog-automation", { method: "POST", body: JSON.stringify({ action: "removeTopic", index: Number(btn.dataset.index) }) });
+            blogAutomation = await api("/api/admin-blog-automation");
+            renderBlogAutomation();
+          } catch (err) {
+            alert("Error removing topic: " + err.message);
+          }
+        });
+      });
+    }
+  }
+
+  document.getElementById("blog-auto-enabled")?.addEventListener("change", async (e) => {
+    try {
+      await api("/api/admin-blog-automation", { method: "POST", body: JSON.stringify({ action: "toggle", enabled: e.target.checked }) });
+      blogAutomation = await api("/api/admin-blog-automation");
+      renderBlogAutomation();
+    } catch (err) {
+      alert("Error updating automation: " + err.message);
+      e.target.checked = !e.target.checked;
+    }
+  });
+
+  document.getElementById("blog-add-topic-btn")?.addEventListener("click", async () => {
+    const input = document.getElementById("blog-new-topic");
+    const topic = input.value.trim();
+    if (!topic) return;
+    try {
+      await api("/api/admin-blog-automation", { method: "POST", body: JSON.stringify({ action: "addTopic", topic }) });
+      blogAutomation = await api("/api/admin-blog-automation");
+      renderBlogAutomation();
+      input.value = "";
+    } catch (err) {
+      alert("Error adding topic: " + err.message);
+    }
+  });
+
+  document.getElementById("blog-generate-now-btn")?.addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    e.target.textContent = "Generating…";
+    try {
+      const post = await api("/api/admin-blog-automation", { method: "POST", body: JSON.stringify({ action: "generateNow" }) });
+      posts = await api("/api/admin-blog");
+      blogAutomation = await api("/api/admin-blog-automation");
+      renderPostList();
+      renderBlogAutomation();
+      alert(`Draft created: "${post.title}" — find it in Posts below to review and publish.`);
+    } catch (err) {
+      alert("Error generating post: " + err.message);
+    } finally {
+      e.target.disabled = false;
+      e.target.textContent = "Generate a post now";
     }
   });
 })();
