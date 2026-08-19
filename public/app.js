@@ -221,8 +221,8 @@
       }
 
       track("estimate_completed", { source: data.source, confidence: data.confidence });
-      lastEstimateResponse = data;
-      renderResult(data);
+      lastEstimateResponse = { ...data, jobDescription: description };
+      renderResult(lastEstimateResponse);
     } catch (err) {
       console.error(err);
       renderError("Something went wrong analyzing the job. Your photos are safe. Try again or continue with a description-only estimate.");
@@ -360,6 +360,14 @@
     html += renderMaterialsPlaceholder();
 
     html += `
+      <div class="card pro-quote-box" style="text-align:center;">
+        <p style="font-weight:600;color:var(--navy);margin:0 0 6px;">Ready to send this price to your customer?</p>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">Turn this into a professional, branded quote — PDF, email, or text. $2.99, one time, no account needed.</p>
+        <button type="button" class="btn-primary btn-full" id="create-pro-quote-btn">Create Professional Quote — $2.99</button>
+      </div>
+    `;
+
+    html += `
       <div class="card feedback-box" id="feedback-box">
         <p>Does this price look right?</p>
         <div class="feedback-buttons">
@@ -411,9 +419,15 @@
     // Prefer the AI's specific per-job product suggestions (e.g. "18v cordless
     // drill"). If none are available — fallback mode, or the AI returned
     // nothing usable — fall back to one generic link off the description.
-    const products = Array.isArray(lastEstimateResponse?.suggestedProducts) && lastEstimateResponse.suggestedProducts.length
+    // Products can be plain strings (older/fallback format) or objects with
+    // a real looked-up price: { name, price, pricedFromSearch }.
+    const rawProducts = Array.isArray(lastEstimateResponse?.suggestedProducts) && lastEstimateResponse.suggestedProducts.length
       ? lastEstimateResponse.suggestedProducts
       : [els.description.value.slice(0, 80) || "handyman materials"];
+
+    const products = rawProducts.map((p) =>
+      typeof p === "string" ? { name: p, price: null, pricedFromSearch: false } : p
+    );
 
     // Only one partner is expected to be enabled at a time (Amazon vs. Home
     // Depot vs. a curated list) — if more than one is on, we use all of them,
@@ -422,14 +436,18 @@
     if (!enabledPartners.length) return "";
 
     const rows = products.map((product) => {
-      const query = encodeURIComponent(product);
+      const query = encodeURIComponent(product.name);
       const partnerLinks = enabledPartners
         .map((p) => {
           const url = p.urlTemplate.replace("{QUERY}", query);
           return `<a href="${url}" target="_blank" rel="noopener sponsored" class="affiliate-link">${escapeHtml(p.label)} →</a>`;
         })
         .join("");
-      return `<div class="affiliate-row"><span class="affiliate-product-name">${escapeHtml(product)}</span>${partnerLinks}</div>`;
+      const priceHtml =
+        typeof product.price === "number"
+          ? `<span class="affiliate-product-price">${money(product.price)}</span>`
+          : "";
+      return `<div class="affiliate-row"><span class="affiliate-product-name">${escapeHtml(product.name)}${priceHtml}</span>${partnerLinks}</div>`;
     });
 
     return `<div class="affiliate-links">${rows.join("")}</div>`;
@@ -502,6 +520,16 @@
           });
         }
       });
+    });
+
+    document.getElementById("create-pro-quote-btn")?.addEventListener("click", () => {
+      track("pro_quote_cta_clicked");
+      try {
+        sessionStorage.setItem("jpn_pending_estimate", JSON.stringify(data));
+        window.location.href = "/quote-builder.html";
+      } catch (err) {
+        alert("Couldn't start the quote builder. Please try again.");
+      }
     });
   }
 
