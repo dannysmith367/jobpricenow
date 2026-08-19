@@ -1,0 +1,20 @@
+{
+  "name": "jobpricenow",
+  "version": "0.1.0",
+  "description": "Free handyman job pricing calculator — describe the job, get a realistic price in seconds.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "test": "node tests/pricing.test.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@netlify/blobs": "^8.1.0",
+    "pdf-lib": "^1.17.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
