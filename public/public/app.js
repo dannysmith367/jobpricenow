@@ -237,12 +237,22 @@
   }
 
   function renderLoadingState() {
-    const messages = ["Reading the job…", "Checking labor and materials…", "Calculating your price…"];
+    const messages = [
+      "Reading the job…",
+      "Understanding what's involved…",
+      "Checking labor hours…",
+      "Looking up real material prices…",
+      "Comparing with similar jobs…",
+      "Factoring in your location…",
+      "Double-checking the numbers…",
+      "Almost done — thanks for your patience…",
+    ];
     els.resultSection.hidden = false;
     els.resultSection.innerHTML = `
       <div class="card loading-box">
         <div class="spinner" aria-hidden="true"></div>
         <div id="loading-message">${messages[0]}</div>
+        <div id="loading-submessage" style="font-size:12.5px;color:var(--muted);margin-top:6px;">This can take up to 20 seconds since we check real prices for you.</div>
       </div>`;
     let i = 0;
     const msgEl = document.getElementById("loading-message");
@@ -250,7 +260,7 @@
       i = (i + 1) % messages.length;
       if (msgEl) msgEl.textContent = messages[i];
       else clearInterval(interval);
-    }, 900);
+    }, 1600);
     els.resultSection.dataset.loadingInterval = interval;
     els.resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
