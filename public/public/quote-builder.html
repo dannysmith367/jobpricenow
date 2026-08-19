@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>Create Professional Quote — JobPriceNow</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .qb-wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 60px; }
+  .qb-section { margin-bottom: 22px; }
+  .qb-section h2 { font-size: 15px; color: var(--navy); margin: 0 0 10px; }
+  .qb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .qb-grid { grid-template-columns: 1fr; } }
+  .qb-field { margin-bottom: 10px; }
+  .qb-field label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  .qb-field input, .qb-field textarea, .qb-field select {
+    width: 100%; padding: 10px 12px; border: 1px solid #D6DDE6; border-radius: 8px;
+    font-family: var(--font); font-size: 14px; color: var(--navy); box-sizing: border-box;
+  }
+  .qb-field textarea { resize: vertical; min-height: 60px; }
+  .price-options { display: flex; flex-direction: column; gap: 8px; }
+  .price-option { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1.5px solid #D6DDE6; border-radius: 10px; cursor: pointer; }
+  .price-option.selected { border-color: var(--blue); background: #EEF4FF; }
+  .price-option .amount { margin-left: auto; font-weight: 700; color: var(--navy); }
+  .qb-cta { width: 100%; padding: 15px; font-size: 16px; font-weight: 700; color: #fff; background: var(--blue); border: none; border-radius: 10px; cursor: pointer; }
+  .qb-cta:disabled { background: #B7C0CC; cursor: not-allowed; }
+  .qb-cta.secondary { background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
+  .promo-row { display: flex; gap: 8px; align-items: flex-end; }
+  .promo-row .qb-field { flex: 1; margin-bottom: 0; }
+  .qb-error { color: #C0392B; font-size: 13.5px; margin: 10px 0; display: none; }
+  .qb-note { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .qb-price-banner { text-align: center; padding: 16px; background: var(--green-bg); border-radius: 10px; margin-bottom: 22px; }
+  .qb-price-banner strong { font-size: 20px; color: var(--navy); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="/" class="brand" aria-label="JobPriceNow home">
+      <span class="brand-word">JobPrice<span class="accent">Now</span></span>
+    </a>
+  </div>
+</header>
+
+<main class="qb-wrap">
+  <div id="qb-loading" style="text-align:center;padding:40px 0;color:var(--muted);">Loading your estimate…</div>
+
+  <div id="qb-app" style="display:none;">
+    <h1 style="font-size:22px;color:var(--navy);">Create a Professional Quote</h1>
+    <p class="subhead" style="margin-top:4px;">Turn your estimate into a branded, customer-ready quote — $2.99, one time, no account needed.</p>
+
+    <div class="qb-price-banner">
+      <div style="font-size:12.5px;color:var(--muted);">Job</div>
+      <strong id="qb-job-type">—</strong>
+    </div>
+
+    <form id="qb-form">
+      <div class="qb-section">
+        <h2>Your business info</h2>
+        <div class="qb-field"><label for="businessName">Business name</label><input id="businessName" /></div>
+        <div class="qb-grid">
+          <div class="qb-field"><label for="contractorName">Your name</label><input id="contractorName" /></div>
+          <div class="qb-field"><label for="phone">Phone</label><input id="phone" type="tel" /></div>
+        </div>
+        <div class="qb-grid">
+          <div class="qb-field"><label for="email">Email</label><input id="email" type="email" /></div>
+          <div class="qb-field"><label for="website">Website (optional)</label><input id="website" /></div>
+        </div>
+        <div class="qb-grid">
+          <div class="qb-field"><label for="address">Business address (optional)</label><input id="address" /></div>
+          <div class="qb-field"><label for="licenseNumber">License # (optional)</label><input id="licenseNumber" /></div>
+        </div>
+      </div>
+
+      <div class="qb-section">
+        <h2>Customer info <span class="optional">(optional)</span></h2>
+        <div class="qb-grid">
+          <div class="qb-field"><label for="customerName">Customer name</label><input id="customerName" /></div>
+          <div class="qb-field"><label for="jobAddress">Job address</label><input id="jobAddress" /></div>
+        </div>
+        <div class="qb-grid">
+          <div class="qb-field"><label for="customerPhone">Customer phone</label><input id="customerPhone" type="tel" /></div>
+          <div class="qb-field"><label for="customerEmail">Customer email</label><input id="customerEmail" type="email" /></div>
+        </div>
+      </div>
+
+      <div class="qb-section">
+        <h2>Price to quote</h2>
+        <div class="price-options" id="price-options"></div>
+        <div class="qb-field" id="custom-price-field" style="display:none;margin-top:10px;">
+          <label for="customPrice">Custom price ($)</label>
+          <input id="customPrice" type="number" min="1" step="1" />
+        </div>
+      </div>
+
+      <div class="qb-section">
+        <h2>Quote details <span class="optional">(optional)</span></h2>
+        <div class="qb-field"><label for="additionalNotes">Notes for the customer</label><textarea id="additionalNotes"></textarea></div>
+        <div class="qb-grid">
+          <div class="qb-field"><label for="quoteValidDays">Quote valid for (days)</label><input id="quoteValidDays" type="number" value="30" min="1" /></div>
+          <div class="qb-field"><label for="paymentTerms">Payment terms</label><input id="paymentTerms" value="Payment due upon completion unless otherwise specified." /></div>
+        </div>
+      </div>
+
+      <div class="qb-section">
+        <h2>Have a promo code?</h2>
+        <div class="promo-row">
+          <div class="qb-field"><input id="promoCode" placeholder="Enter code" /></div>
+        </div>
+      </div>
+
+      <p class="qb-error" id="qb-error"></p>
+
+      <button type="submit" class="qb-cta" id="qb-submit">Create Professional Quote — $2.99</button>
+      <p class="qb-note" style="text-align:center;">No account required. Secure checkout via Stripe.</p>
+    </form>
+  </div>
+
+  <div id="qb-missing" style="display:none;text-align:center;padding:40px 16px;">
+    <p style="color:var(--muted);">We couldn't find an estimate to build a quote from.</p>
+    <a href="/" class="qb-cta secondary" style="display:inline-block;text-decoration:none;padding:12px 20px;">Start a new estimate</a>
+  </div>
+</main>
+
+<script src="quote-builder.js"></script>
+</body>
+</html>
