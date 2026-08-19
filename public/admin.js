@@ -8,6 +8,7 @@
   let monetization = null;
   let posts = [];
   let editingPostId = null;
+  let promoCodes = [];
 
   function getPassword() {
     return sessionStorage.getItem(SESSION_KEY) || "";
@@ -34,10 +35,12 @@
     try {
       monetization = await api("/api/admin-monetization");
       posts = await api("/api/admin-blog");
+      promoCodes = await api("/api/admin-promo");
       gate.hidden = true;
       dashboard.hidden = false;
       renderMonetization();
       renderPostList();
+      renderPromoCodes();
     } catch (err) {
       sessionStorage.removeItem(SESSION_KEY);
       gateError.textContent = "Incorrect password. Try again.";
@@ -227,4 +230,65 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
+
+  // ---------- Promo codes ----------
+  function renderPromoCodes() {
+    const container = document.getElementById("promo-list");
+    if (!container) return;
+    if (!promoCodes.length) {
+      container.innerHTML = `<p class="sub">No promo codes yet.</p>`;
+      return;
+    }
+    container.innerHTML = promoCodes
+      .map((c) => {
+        const usage = c.maxUses ? `${c.usedCount}/${c.maxUses} used` : `${c.usedCount} used (unlimited)`;
+        return `
+          <div class="row" style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div>
+              <strong>${escapeHtml(c.code)}</strong>
+              <span class="sub" style="margin-left:8px;">${usage}</span>
+              ${c.note ? `<div class="sub">${escapeHtml(c.note)}</div>` : ""}
+            </div>
+            <label class="switch"><input type="checkbox" class="promo-toggle" data-code="${escapeHtml(c.code)}" ${c.active ? "checked" : ""}><span class="slider"></span></label>
+          </div>
+        `;
+      })
+      .join("");
+
+    container.querySelectorAll(".promo-toggle").forEach((el) => {
+      el.addEventListener("change", async () => {
+        try {
+          await api("/api/admin-promo", {
+            method: "POST",
+            body: JSON.stringify({ action: "toggle", code: el.dataset.code, active: el.checked }),
+          });
+          promoCodes = await api("/api/admin-promo");
+          renderPromoCodes();
+        } catch (err) {
+          alert("Error updating promo code: " + err.message);
+          el.checked = !el.checked;
+        }
+      });
+    });
+  }
+
+  document.getElementById("create-promo-btn")?.addEventListener("click", async () => {
+    const code = document.getElementById("promo-code-input").value.trim();
+    const note = document.getElementById("promo-note-input").value.trim();
+    const maxUses = document.getElementById("promo-maxuses-input").value.trim();
+    if (!code) {
+      alert("Enter a code first.");
+      return;
+    }
+    try {
+      await api("/api/admin-promo", { method: "POST", body: JSON.stringify({ code, note, maxUses }) });
+      promoCodes = await api("/api/admin-promo");
+      renderPromoCodes();
+      document.getElementById("promo-code-input").value = "";
+      document.getElementById("promo-note-input").value = "";
+      document.getElementById("promo-maxuses-input").value = "";
+    } catch (err) {
+      alert("Error creating promo code: " + err.message);
+    }
+  });
 })();
