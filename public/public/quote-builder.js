@@ -148,14 +148,21 @@
   }
 
   async function finalize(requestId, sessionId) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
     try {
-      const res = await fetch(`/api/finalize-quote?requestId=${encodeURIComponent(requestId)}&session_id=${encodeURIComponent(sessionId)}`);
+      const res = await fetch(`/api/finalize-quote?requestId=${encodeURIComponent(requestId)}&session_id=${encodeURIComponent(sessionId)}`, {
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "We couldn't confirm your payment.");
       sessionStorage.removeItem("jpn_pending_estimate");
       window.location.href = data.quoteUrl;
     } catch (err) {
-      els.loading.innerHTML = `<p style="color:#C0392B;">${err.message || "Something went wrong confirming your payment."}</p><p style="margin-top:10px;"><a href="javascript:location.reload()">Try again</a> — you will not be charged twice.</p>`;
+      const message = err.name === "AbortError" ? "This is taking longer than expected." : err.message || "Something went wrong confirming your payment.";
+      els.loading.innerHTML = `<p style="color:#C0392B;">${message}</p><p style="margin-top:10px;"><a href="javascript:location.reload()">Try again</a> — you will not be charged twice.</p>`;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 })();
