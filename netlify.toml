@@ -21,3 +21,8 @@
   from = "/blog/:slug"
   to = "/.netlify/functions/blog-post?slug=:slug"
   status = 200
+
+[[redirects]]
+  from = "/q/:token"
+  to = "/quote-view.html?token=:token"
+  status = 200

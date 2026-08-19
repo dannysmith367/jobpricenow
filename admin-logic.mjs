@@ -8,6 +8,7 @@ import { isAuthorized } from "./lib/admin-auth.mjs";
 import { getMonetizationConfig, saveMonetizationConfig, toPublicConfig } from "./lib/monetization-store.mjs";
 import { getAllPosts, getPublishedPosts, getPostBySlug, savePost, deletePost } from "./lib/blog-store.mjs";
 import { renderBlogIndex, renderBlogPost, renderNotFound } from "./lib/blog-render.mjs";
+import { listPromoCodes, createPromoCode, setPromoCodeActive } from "./lib/promo-codes.mjs";
 
 // ---------- Public site config (no auth) ----------
 export async function handleSiteConfigRequest() {
@@ -59,4 +60,33 @@ export async function handleBlogPostPage(slug) {
   const [post, monetization] = await Promise.all([getPostBySlug(slug), getMonetizationConfig()]);
   if (!post || !post.published) return { status: 404, html: renderNotFound() };
   return { status: 200, html: renderBlogPost(post, monetization) };
+}
+
+// ---------- Admin: promo codes (bypass the $2.99 quote paywall) ----------
+export async function handleAdminPromoList(headers) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  const codes = await listPromoCodes();
+  return { status: 200, data: codes };
+}
+
+export async function handleAdminPromoCreate(headers, body) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  if (!body?.code) return { status: 400, error: "A code is required." };
+  try {
+    const created = await createPromoCode(body);
+    return { status: 200, data: created };
+  } catch (err) {
+    return { status: 400, error: err.message };
+  }
+}
+
+export async function handleAdminPromoToggle(headers, body) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  if (!body?.code) return { status: 400, error: "A code is required." };
+  try {
+    const updated = await setPromoCodeActive(body.code, body.active);
+    return { status: 200, data: updated };
+  } catch (err) {
+    return { status: 400, error: err.message };
+  }
 }

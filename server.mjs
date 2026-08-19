@@ -18,7 +18,17 @@ import {
   handleAdminBlogDelete,
   handleBlogIndexPage,
   handleBlogPostPage,
+  handleAdminPromoList,
+  handleAdminPromoCreate,
+  handleAdminPromoToggle,
 } from "./admin-logic.mjs";
+import {
+  handleQuoteRequestCreate,
+  handleQuoteFinalize,
+  handleQuoteGet,
+  handleQuotePdf,
+  handleQuoteEmailSend,
+} from "./quote-logic.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -99,6 +109,43 @@ app.get("/blog", async (req, res) => {
 app.get("/blog/:slug", async (req, res) => {
   const result = await handleBlogPostPage(req.params.slug);
   res.status(result.status).type("html").send(result.html);
+});
+
+// ---- Admin: promo codes ----
+app.get("/api/admin-promo", async (req, res) => {
+  const result = await handleAdminPromoList(req.headers);
+  res.status(result.status).json(result.data ?? { error: result.error });
+});
+app.post("/api/admin-promo", async (req, res) => {
+  const result = req.body?.action === "toggle" ? await handleAdminPromoToggle(req.headers, req.body) : await handleAdminPromoCreate(req.headers, req.body);
+  res.status(result.status).json(result.data ?? { error: result.error });
+});
+
+// ---- Paid quote feature ----
+app.post("/api/create-quote-request", async (req, res) => {
+  const siteUrl = `${req.protocol}://${req.get("host")}`;
+  const result = await handleQuoteRequestCreate(req.body, siteUrl);
+  res.status(result.status).json(result.status === 200 ? result.data : { error: result.error });
+});
+app.get("/api/finalize-quote", async (req, res) => {
+  const result = await handleQuoteFinalize({ requestId: req.query.requestId, sessionId: req.query.session_id });
+  res.status(result.status).json(result.status === 200 ? result.data : { error: result.error });
+});
+app.get("/api/quote", async (req, res) => {
+  const result = await handleQuoteGet(req.query.token);
+  res.status(result.status).json(result.status === 200 ? result.data : { error: result.error });
+});
+app.get("/api/quote-pdf", async (req, res) => {
+  const result = await handleQuotePdf(req.query.token);
+  if (result.status !== 200) return res.status(result.status).json({ error: result.error });
+  res.status(200).type("application/pdf").send(result.pdfBuffer);
+});
+app.post("/api/send-quote-email", async (req, res) => {
+  const result = await handleQuoteEmailSend({ token: req.body?.token, toEmail: req.body?.toEmail });
+  res.status(result.status).json(result.status === 200 ? result.data : { error: result.error });
+});
+app.get("/q/:token", async (req, res) => {
+  res.redirect(`/quote-view.html?token=${encodeURIComponent(req.params.token)}`);
 });
 
 const PORT = process.env.PORT || 8787;
