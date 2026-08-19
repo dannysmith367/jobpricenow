@@ -60,6 +60,11 @@
       <div class="qb-section">
         <h2>Your business info</h2>
         <div class="qb-field"><label for="businessName">Business name</label><input id="businessName" /></div>
+        <div class="qb-field">
+          <label for="logoFile">Business logo <span class="optional">(optional, shows at the top of the quote)</span></label>
+          <input type="file" id="logoFile" accept="image/png,image/jpeg" />
+          <div id="logo-preview" style="margin-top:8px;display:none;"><img id="logo-preview-img" style="max-height:60px;max-width:180px;border-radius:6px;" /></div>
+        </div>
         <div class="qb-grid">
           <div class="qb-field"><label for="contractorName">Your name</label><input id="contractorName" /></div>
           <div class="qb-field"><label for="phone">Phone</label><input id="phone" type="tel" /></div>

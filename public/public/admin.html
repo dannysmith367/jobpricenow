@@ -99,6 +99,23 @@
       <p class="sub">Toggle a partner on and paste your affiliate link template. Use <code>{QUERY}</code> where the search term or product should go.</p>
       <div id="affiliate-container"></div>
     </div>
+
+    <div class="card">
+      <h3>Materials section</h3>
+      <p class="sub">Choose what shows under a free estimate: shoppable material links, or a "Find a Pro" call-to-action instead.</p>
+      <label style="display:block;margin-bottom:8px;font-size:14px;">
+        <input type="radio" name="materials-mode" value="products" id="materials-mode-products"> Show material product suggestions
+      </label>
+      <label style="display:block;margin-bottom:14px;font-size:14px;">
+        <input type="radio" name="materials-mode" value="findAPro" id="materials-mode-findapro"> Show "Find a Pro" link instead
+      </label>
+      <div class="row" style="margin-bottom:6px;">
+        <strong style="font-size:13.5px;">Angi — Find a Pro</strong>
+        <label class="switch"><input type="checkbox" id="angi-enabled"><span class="slider"></span></label>
+      </div>
+      <input type="url" id="angi-url" placeholder="https://www.angi.com/your-affiliate-link?zip={ZIP}">
+      <p class="sub" style="margin-top:6px;">Use <code>{ZIP}</code> if you want the visitor's ZIP code included automatically — optional.</p>
+    </div>
   </div>
 
   <!-- BLOG TAB -->

@@ -348,10 +348,13 @@
       `;
     }
 
+    const showQuoteBtn = PERSONA_COPY[getPersona()].showQuoteBtn;
     html += `
       <div class="action-row">
-        <button type="button" class="btn-outline btn-full" id="new-estimate-btn">Price Another Job</button>
+        ${showQuoteBtn ? `<button type="button" class="btn-primary btn-full" id="create-quote-btn">Create Customer Quote</button>` : ""}
+        <button type="button" class="btn-outline btn-full" id="new-estimate-btn">${showQuoteBtn ? "Price Another Job" : "Check Another Job"}</button>
       </div>
+      <div id="quote-container"></div>
     `;
 
     html += renderMaterialsPlaceholder();
@@ -396,6 +399,9 @@
   }
 
   function renderMaterialsPlaceholder() {
+    if (siteConfig?.materialsSectionMode === "findAPro") {
+      return renderFindAProBox() + `<div class="ad-slot" id="result-ad-slot" data-slot="result_ad_slot"></div>`;
+    }
     const affiliateLinksHtml = buildAffiliateLinksHtml();
     return `
       <div class="materials-box">
@@ -407,6 +413,20 @@
         }
       </div>
       <div class="ad-slot" id="result-ad-slot" data-slot="result_ad_slot"></div>
+    `;
+  }
+
+  function renderFindAProBox() {
+    const angi = siteConfig?.angiPartner;
+    if (!angi?.enabled || !angi?.urlTemplate) return "";
+    const zip = els.zip?.value?.trim() || "";
+    const url = angi.urlTemplate.replace("{ZIP}", encodeURIComponent(zip));
+    return `
+      <div class="materials-box" style="text-align:center;">
+        <h3>Not doing this job yourself?</h3>
+        <p class="materials-sub">Find a local pro to handle it for you.</p>
+        <a href="${url}" target="_blank" rel="noopener sponsored" class="btn-primary btn-full" style="display:inline-block;text-decoration:none;margin-top:8px;">Find a Pro on Angi →</a>
+      </div>
     `;
   }
 
@@ -467,6 +487,32 @@
       els.form.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
+    document.getElementById("create-quote-btn")?.addEventListener("click", () => {
+      track("quote_created");
+      const quoteText = buildQuoteText(lastRequestBody.description, pricing);
+      const container = document.getElementById("quote-container");
+      container.innerHTML = `
+        <div class="quote-box">
+          <h3>Customer Quote</h3>
+          <p class="quote-text">${escapeHtml(quoteText)}</p>
+          <button type="button" class="btn-outline btn-full" id="copy-quote-btn">Copy Quote</button>
+        </div>
+      `;
+      document.getElementById("copy-quote-btn").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(quoteText);
+          track("quote_copied");
+          const btn = document.getElementById("copy-quote-btn");
+          const original = btn.textContent;
+          btn.textContent = "Copied!";
+          setTimeout(() => (btn.textContent = original), 1500);
+        } catch (_) {
+          alert("Couldn't copy automatically — please select and copy the text above.");
+        }
+      });
+      container.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
     document.querySelectorAll(".feedback-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".feedback-btn").forEach((b) => b.classList.remove("selected"));
@@ -502,6 +548,17 @@
         alert("Couldn't start the quote builder. Please try again.");
       }
     });
+  }
+
+  function buildQuoteText(description, pricing) {
+    return [
+      description,
+      "",
+      `Labor and materials: ${money(pricing.prices.recommended)}`,
+      `Estimated completion time: approximately ${pricing.laborHoursLow}–${pricing.laborHoursHigh} hours.`,
+      "",
+      "Price assumes normal site conditions and may change if additional repairs are discovered.",
+    ].join("\n");
   }
 
   track("page_loaded");

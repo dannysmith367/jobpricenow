@@ -82,6 +82,51 @@
   }
   renderPriceOptions();
 
+  let logoDataUrl = null;
+  document.getElementById("logoFile")?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      logoDataUrl = null;
+      document.getElementById("logo-preview").style.display = "none";
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      showError("Logo image is too large — please use one under 4MB.");
+      e.target.value = "";
+      return;
+    }
+    try {
+      logoDataUrl = await resizeImageToDataUrl(file, 300);
+      const img = document.getElementById("logo-preview-img");
+      img.src = logoDataUrl;
+      document.getElementById("logo-preview").style.display = "block";
+    } catch {
+      showError("Couldn't load that image — try a different file.");
+    }
+  });
+
+  function resizeImageToDataUrl(file, maxDimension) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("read failed"));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("image load failed"));
+        img.onload = () => {
+          const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   els.form.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearError();
@@ -98,6 +143,7 @@
         website: val("website"),
         address: val("address"),
         licenseNumber: val("licenseNumber"),
+        logoDataUrl: logoDataUrl || undefined,
       },
       customer: {
         name: val("customerName"),
@@ -148,21 +194,14 @@
   }
 
   async function finalize(requestId, sessionId) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
     try {
-      const res = await fetch(`/api/finalize-quote?requestId=${encodeURIComponent(requestId)}&session_id=${encodeURIComponent(sessionId)}`, {
-        signal: controller.signal,
-      });
+      const res = await fetch(`/api/finalize-quote?requestId=${encodeURIComponent(requestId)}&session_id=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "We couldn't confirm your payment.");
       sessionStorage.removeItem("jpn_pending_estimate");
       window.location.href = data.quoteUrl;
     } catch (err) {
-      const message = err.name === "AbortError" ? "This is taking longer than expected." : err.message || "Something went wrong confirming your payment.";
-      els.loading.innerHTML = `<p style="color:#C0392B;">${message}</p><p style="margin-top:10px;"><a href="javascript:location.reload()">Try again</a> — you will not be charged twice.</p>`;
-    } finally {
-      clearTimeout(timeout);
+      els.loading.innerHTML = `<p style="color:#C0392B;">${err.message || "Something went wrong confirming your payment."}</p><p style="margin-top:10px;"><a href="javascript:location.reload()">Try again</a> — you will not be charged twice.</p>`;
     }
   }
 })();

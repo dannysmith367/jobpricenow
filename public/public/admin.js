@@ -105,6 +105,12 @@
       `;
       affEl.appendChild(row);
     });
+
+    const mode = monetization.materialsSectionMode || "products";
+    document.getElementById("materials-mode-products").checked = mode === "products";
+    document.getElementById("materials-mode-findapro").checked = mode === "findAPro";
+    document.getElementById("angi-enabled").checked = Boolean(monetization.angiPartner?.enabled);
+    document.getElementById("angi-url").value = monetization.angiPartner?.urlTemplate || "";
   }
 
   function collectMonetizationFromForm() {
@@ -118,6 +124,12 @@
       const field = el.dataset.field;
       next.affiliatePartners[key][field] = field === "enabled" ? el.checked : el.value;
     });
+    next.materialsSectionMode = document.querySelector('input[name="materials-mode"]:checked')?.value || "products";
+    next.angiPartner = {
+      ...next.angiPartner,
+      enabled: document.getElementById("angi-enabled").checked,
+      urlTemplate: document.getElementById("angi-url").value,
+    };
     return next;
   }
 
