@@ -4,11 +4,19 @@ export default async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
   }
-  const siteUrl = process.env.SITE_URL || new URL(req.url).origin;
-  const body = await req.json().catch(() => ({}));
-  const result = await handleQuoteRequestCreate(body, siteUrl);
-  return new Response(JSON.stringify(result.status === 200 ? result.data : { error: result.error }), {
-    status: result.status,
-    headers: { "Content-Type": "application/json" },
-  });
+  try {
+    const siteUrl = process.env.SITE_URL || new URL(req.url).origin;
+    const body = await req.json().catch(() => ({}));
+    const result = await handleQuoteRequestCreate(body, siteUrl);
+    return new Response(JSON.stringify(result.status === 200 ? result.data : { error: result.error }), {
+      status: result.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("create-quote-request function error:", err);
+    return new Response(JSON.stringify({ error: "We hit an unexpected error starting your quote. Please try again." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 };
