@@ -9,6 +9,8 @@ import { getMonetizationConfig, saveMonetizationConfig, toPublicConfig } from ".
 import { getAllPosts, getPublishedPosts, getPostBySlug, savePost, deletePost } from "./lib/blog-store.mjs";
 import { renderBlogIndex, renderBlogPost, renderNotFound } from "./lib/blog-render.mjs";
 import { listPromoCodes, createPromoCode, setPromoCodeActive } from "./lib/promo-codes.mjs";
+import { getAutomationState, setAutomationEnabled, generateNow } from "./lib/blog-automation.mjs";
+import { getTopics, addTopic, removeTopic } from "./lib/blog-topics.mjs";
 
 // ---------- Public site config (no auth) ----------
 export async function handleSiteConfigRequest() {
@@ -89,4 +91,44 @@ export async function handleAdminPromoToggle(headers, body) {
   } catch (err) {
     return { status: 400, error: err.message };
   }
+}
+
+// ---------- Admin: blog automation ----------
+export async function handleAdminBlogAutomationGet(headers) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  const [state, topics] = await Promise.all([getAutomationState(), getTopics()]);
+  return { status: 200, data: { ...state, topics } };
+}
+
+export async function handleAdminBlogAutomationToggle(headers, body) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  const state = await setAutomationEnabled(body?.enabled);
+  return { status: 200, data: state };
+}
+
+export async function handleAdminBlogTopicAdd(headers, body) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  try {
+    const topics = await addTopic(body?.topic);
+    return { status: 200, data: topics };
+  } catch (err) {
+    return { status: 400, error: err.message };
+  }
+}
+
+export async function handleAdminBlogTopicRemove(headers, body) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  try {
+    const topics = await removeTopic(Number(body?.index));
+    return { status: 200, data: topics };
+  } catch (err) {
+    return { status: 400, error: err.message };
+  }
+}
+
+export async function handleAdminBlogGenerateNow(headers) {
+  if (!isAuthorized(headers)) return { status: 401, error: "Incorrect admin password." };
+  const result = await generateNow();
+  if (!result.generated) return { status: 400, error: result.reason || "Couldn't generate a post." };
+  return { status: 200, data: result.post };
 }
