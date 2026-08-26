@@ -1,0 +1,48 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/estimate"
+  to = "/.netlify/functions/estimate"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/blog"
+  to = "/.netlify/functions/blog-index"
+  status = 200
+
+[[redirects]]
+  from = "/blog/:slug"
+  to = "/.netlify/functions/blog-post?slug=:slug"
+  status = 200
+
+[[redirects]]
+  from = "/pricing"
+  to = "/.netlify/functions/pricing-index"
+  status = 200
+
+[[redirects]]
+  from = "/pricing/:slug"
+  to = "/.netlify/functions/pricing-page?slug=:slug"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+
+[[redirects]]
+  from = "/q/:token"
+  to = "/quote-view.html?token=:token"
+  status = 200
+
+[[redirects]]
+  from = "/painters"
+  to = "/painters.html"
+  status = 200
