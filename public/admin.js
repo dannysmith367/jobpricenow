@@ -115,8 +115,29 @@
     const mode = monetization.homeownerMaterialsMode || "products";
     document.getElementById("materials-mode-products").checked = mode === "products";
     document.getElementById("materials-mode-findapro").checked = mode === "findAPro";
-    document.getElementById("angi-enabled").checked = Boolean(monetization.angiPartner?.enabled);
-    document.getElementById("angi-url").value = monetization.angiPartner?.urlTemplate || "";
+
+    const leadGenPartners = monetization.leadGenPartners || {};
+    const activeSelect = document.getElementById("leadgen-active-partner");
+    activeSelect.innerHTML = Object.entries(leadGenPartners)
+      .map(([key, p]) => `<option value="${key}">${escapeHtml(p.label)}</option>`)
+      .join("");
+    activeSelect.value = monetization.activeLeadGenPartner || "angi";
+
+    const leadGenEl = document.getElementById("leadgen-partners-container");
+    leadGenEl.innerHTML = "";
+    Object.entries(leadGenPartners).forEach(([key, partner]) => {
+      const row = document.createElement("div");
+      row.style.marginBottom = "14px";
+      row.innerHTML = `
+        <div class="row" style="margin-bottom:6px;">
+          <strong style="font-size:13.5px;">${escapeHtml(partner.label)}</strong>
+          <label class="switch"><input type="checkbox" data-leadgen-key="${key}" data-leadgen-field="enabled" ${partner.enabled ? "checked" : ""}><span class="slider"></span></label>
+        </div>
+        <input type="url" data-leadgen-key="${key}" data-leadgen-field="urlTemplate" placeholder="https://partner.example.com/your-affiliate-link?zip={ZIP}" value="${escapeHtml(partner.urlTemplate)}">
+      `;
+      leadGenEl.appendChild(row);
+    });
+
     document.getElementById("ga-id").value = monetization.googleAnalyticsId || "";
   }
 
@@ -132,11 +153,12 @@
       next.affiliatePartners[key][field] = field === "enabled" ? el.checked : el.value;
     });
     next.homeownerMaterialsMode = document.querySelector('input[name="materials-mode"]:checked')?.value || "products";
-    next.angiPartner = {
-      ...next.angiPartner,
-      enabled: document.getElementById("angi-enabled").checked,
-      urlTemplate: document.getElementById("angi-url").value,
-    };
+    document.querySelectorAll("[data-leadgen-key]").forEach((el) => {
+      const key = el.dataset.leadgenKey;
+      const field = el.dataset.leadgenField;
+      next.leadGenPartners[key][field] = field === "enabled" ? el.checked : el.value;
+    });
+    next.activeLeadGenPartner = document.getElementById("leadgen-active-partner").value;
     next.googleAnalyticsId = document.getElementById("ga-id").value.trim();
     return next;
   }
